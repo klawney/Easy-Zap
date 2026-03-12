@@ -1,65 +1,68 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Zap Entregas</title>
     <link rel="stylesheet" href="./styles/style.css">
 </head>
+
 <body>
 
     <main class="app-container">
-        <h2>
-            <img src="./assets/images/whatsapp-icon.svg" width="28" height="28" alt="WhatsApp">
-            Avisar Cliente
-        </h2>
+        <header class="app-header">
+            <h2>
+                <img src="./assets/images/whatsapp-icon.svg" width="28" height="28" alt="WhatsApp">
+                Avisar Cliente
+            </h2>
+        </header>
 
-        <!-- Novos Campos -->
-        <div class="form-group">
-            <label>Nome do Cliente</label>
-            <input type="text" id="nome" placeholder="Ex: João da Silva" />
-        </div>
-
-        <div class="form-group form-row">
-            <div class="half-width">
-                <label>Empresa</label>
+        <div class="form-row">
+            <div class="form-group half-width">
+                <label for="empresa">Empresa</label>
                 <select id="empresa">
-                    <option value="">Carregando...</option>
+                    <option value="">...</option>
                 </select>
             </div>
-            <div class="half-width">
-                <label>Cód. Entrega</label>
-                <input type="text" id="codigo" placeholder="Ex: BR12345" />
+            <div class="form-group half-width">
+                <label for="entregador">Seu Nome (Salva Auto)</label>
+                <input type="text" id="entregador" placeholder="Ex: Carlos" />
             </div>
         </div>
 
-        <!-- Telefone (DDD default para 31 via JS) -->
-        <div class="form-group">
-            <label>WhatsApp do Cliente</label>
-            <div class="phone-group">
-                <input type="text" value="+55" id="pais" disabled title="Código do País" />
-                <input type="tel" id="ddd" maxlength="2" placeholder="DDD" />
-                <input type="tel" id="numero" placeholder="90000-0000" maxlength="10" />
+        <fieldset class="client-data">
+            <legend>Dados do Destinatário</legend>
+            <div class="form-row">
+                <div class="form-group codigo-group">
+                    <label for="codigo">Código</label>
+                    <input type="text" id="codigo" placeholder="Buscar" />
+                </div>
+                <div class="form-group nome-group">
+                    <label for="nome">Nome Cliente</label>
+                    <input type="text" id="nome" placeholder="..." />
+                </div>
             </div>
-        </div>
+            <div class="form-group">
+                <label for="numero">WhatsApp do Cliente</label>
+                <div class="phone-group">
+                    <input type="text" value="+55" id="pais" disabled />
+                    <input type="tel" id="ddd" maxlength="2" />
+                    <input type="tel" id="numero" placeholder="90000-0000" maxlength="10" />
+                </div>
+            </div>
+            <button type="button" class="btn-limpar-hist" onclick="limparHistoricoClientes()">
+                Limpar Histórico de Destinatários
+            </button>
+        </fieldset>
 
         <div class="form-group">
-            <label for="mensagem">Mensagem</label>
+            <label for="mensagem">Mensagem Padrão</label>
             <select id="mensagem">
                 <option value="">Carregando...</option>
             </select>
-            <small class="hint">Use <b>{nome}</b>, <b>{empresa}</b> e <b>{codigo}</b> para textos personalizados.</small>
-        </div>
-
-        <div class="form-group" id="caixaCustomizada" style="display: none;">
-            <textarea id="textoNovaMensagem" rows="3" placeholder="Ex: Olá {nome}, seu pedido {codigo} chegou!"></textarea>
-            
-            <label class="checkbox-label">
-                <input type="checkbox" id="salvarMensagemCheck" checked>
-                Salvar esta mensagem para as próximas corridas
-            </label>
-            
-            <button type="button" class="btn-limpar" id="btnLimparSalvas" onclick="limparMensagensSalvas()">Apagar minhas mensagens salvas</button>
+            <div id="messagePreview" class="message-preview-box">
+            </div>
         </div>
 
         <button class="btn-enviar" onclick="enviarWhatsApp()">
@@ -70,4 +73,5 @@
 
     <script src="./scripts/app.js"></script>
 </body>
+
 </html>

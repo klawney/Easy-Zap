@@ -1,156 +1,174 @@
-/* Caminho: ./scripts/app.js */
+// --- CHAVES DO LOCALSTORAGE ---
+const STORAGE_KEY_CLIENTES = 'zapApp_clientes_salvos';
+const STORAGE_KEY_ENTREGADOR = 'zapApp_nome_entregador'; // Novo
+const DDD_PADRAO = "31";
 
-// --- CHAVES PARA O LOCALSTORAGE ---
-const STORAGE_KEY_MSGS = 'zapApp_msgs_salvas';
-const STORAGE_KEY_DDD = 'zapApp_ddd_salvo';
-
-// --- MENSAGENS PADRÃO ---
-const msgsPadrao =[
-    "Olá, o seu pedido já está a caminho!",
-    "Olá, o seu pedido chegou ao destino e está te aguardando vir buscar!"
+// --- DADOS EMBUTIDOS ---
+const EMPRESAS_PADRAO = [
+    "Mercado Livre", "Shopee", "Loggi", "Amazon", "Magalu", "iFood", "Outro"
+];
+const MENSAGENS_PADRAO = [
+    {
+        title: "Pedido a Caminho",
+        template: "Olá {nome}! Sou {entregador}, da {empresa}. Seu pedido está a caminho!"
+    },
+    {
+        title: "Pedido Chegou (Aguardando Retirada)",
+        template: "Oi {nome}, aqui é {entregador}. Seu pedido da {empresa} chegou e aguarda retirada."
+    },
+    {
+        title: "Estou no Endereço",
+        template: "Olá {nome}, sou {entregador}. Estou no seu endereço com a encomenda da {empresa}."
+    }
 ];
 
-// --- INICIALIZAÇÃO AO ABRIR O APP ---
+// --- INICIALIZAÇÃO ---
 window.onload = () => {
-    carregarDDD();
-    carregarMensagens();
+    definirDDDPadrao();
+    carregarDadosIniciais();
+    carregarEntregadorSalvo();
+    adicionarEventListeners();
+    atualizarPreviewMensagem();
 };
 
-function carregarDDD() {
-    const dddSalvo = localStorage.getItem(STORAGE_KEY_DDD);
-    if (dddSalvo) {
-        document.getElementById('ddd').value = dddSalvo;
+function definirDDDPadrao() {
+    document.getElementById('ddd').value = DDD_PADRAO;
+}
+
+function carregarDadosIniciais() {
+    const selEmpresa = document.getElementById('empresa');
+    selEmpresa.innerHTML = '';
+    EMPRESAS_PADRAO.forEach(emp => selEmpresa.add(new Option(emp, emp)));
+
+    const selMensagem = document.getElementById('mensagem');
+    selMensagem.innerHTML = '';
+    // ALTERADO: Agora usa 'msg.title' para o texto e 'msg.template' para o valor
+    MENSAGENS_PADRAO.forEach(msg => selMensagem.add(new Option(msg.title, msg.template)));
+}
+
+function carregarEntregadorSalvo() {
+    const nome = localStorage.getItem(STORAGE_KEY_ENTREGADOR);
+    if (nome) {
+        document.getElementById('entregador').value = nome;
     }
 }
 
-function carregarMensagens() {
-    const select = document.getElementById('mensagem');
-    select.innerHTML = ''; // Limpa antes de popular
+function atualizarPreviewMensagem() {
+    const template = document.getElementById("mensagem").value;
+    const textoFormatado = formatarTextoFinal(template);
+    document.getElementById("messagePreview").textContent = textoFormatado;
+}
+// function adicionarEventListeners() {
+//     document.getElementById('codigo').addEventListener('input', preencherDadosCliente);
+//     document.getElementById('numero').addEventListener('input', (e) => aplicarMascaraTelefone(e.target));
+//     // Salva o nome do entregador quando o campo perde o foco
+//     document.getElementById('entregador').addEventListener('blur', (e) => {
+//         localStorage.setItem(STORAGE_KEY_ENTREGADOR, e.target.value.trim());
+//     });
+// }
+// // Em scripts/app.js, substitua sua função adicionarEventListeners por esta:
 
-    // 1. Carrega as opções padrão
-    msgsPadrao.forEach(msg => {
-        select.add(new Option(msg, msg));
+function adicionarEventListeners() {
+    // Lista de IDs dos campos que afetam o preview
+    const campos = ['entregador', 'empresa', 'codigo', 'nome', 'mensagem'];
+
+    campos.forEach(id => {
+        // 'change' para o select, 'input' para os outros
+        const evento = id === 'mensagem' || id === 'empresa' ? 'change' : 'input';
+        document.getElementById(id).addEventListener(evento, atualizarPreviewMensagem);
     });
 
-    // 2. Carrega opções salvas no LocalStorage
-    let msgsSalvas = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS)) ||[];
-    
-    if (msgsSalvas.length > 0) {
-        let grupoPersonalizado = document.createElement('optgroup');
-        grupoPersonalizado.label = "Minhas Mensagens Salvas";
-        
-        msgsSalvas.forEach(msg => {
-            // Corta o texto se for muito longo para caber bonito no Select
-            let textoVisual = msg.length > 45 ? msg.substring(0, 45) + '...' : msg;
-            let opt = new Option(textoVisual, msg);
-            grupoPersonalizado.appendChild(opt);
-        });
-        
-        select.add(grupoPersonalizado);
-    }
-
-    // Exibe ou oculta o botão de limpar com base em existirem mensagens salvas
-    let btnLimpar = document.getElementById('btnLimparSalvas');
-    if (msgsSalvas.length > 0) {
-        btnLimpar.style.display = 'block';
-    } else {
-        btnLimpar.style.display = 'none';
-    }
-
-    // 3. Adiciona a opção de criar nova no final
-    select.add(new Option("✍️ Escrever nova mensagem...", "NOVA"));
+    // Event listeners que não afetam o preview diretamente
+    document.getElementById('numero').addEventListener('input', (e) => aplicarMascaraTelefone(e.target));
+    document.getElementById('entregador').addEventListener('blur', (e) => {
+        localStorage.setItem(STORAGE_KEY_ENTREGADOR, e.target.value.trim());
+    });
+}
+function aplicarMascaraTelefone(elemento) {
+    let valor = elemento.value.replace(/\D/g, '');
+    valor = valor.replace(/^(\d{5})(\d)/, "$1-$2");
+    elemento.value = valor.substring(0, 10);
 }
 
-// --- LÓGICA DA TELA: MOSTRAR/OCULTAR CAIXA NOVA MSG ---
-document.getElementById('mensagem').addEventListener('change', function() {
-    const caixaCustomizada = document.getElementById('caixaCustomizada');
-    if (this.value === 'NOVA') {
-        caixaCustomizada.style.display = 'block';
-        document.getElementById('textoNovaMensagem').focus();
+// --- LÓGICA DE DADOS DO CLIENTE ---
+function preencherDadosCliente(e) {
+    const codigo = e.target.value.toUpperCase();
+    const clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLIENTES)) || {};
+    const cliente = clientes[codigo];
+
+    if (cliente) {
+        document.getElementById('nome').value = cliente.nome;
+        const numeroInput = document.getElementById('numero');
+        numeroInput.value = cliente.tel;
+        aplicarMascaraTelefone(numeroInput);
     } else {
-        caixaCustomizada.style.display = 'none';
-    }
-});
-
-// --- MÁSCARA DO TELEFONE DINÂMICA (XXXXX-XXXX) ---
-document.getElementById('numero').addEventListener('input', function(e) {
-    let valor = e.target.value.replace(/\D/g, ''); 
-    if (valor.length > 5) {
-        valor = valor.substring(0, 5) + '-' + valor.substring(5, 10);
-    }
-    e.target.value = valor;
-});
-
-// --- FUNÇÃO PARA LIMPAR MENSAGENS PERSONALIZADAS ---
-function limparMensagensSalvas() {
-    if(confirm("Tem certeza que deseja apagar todas as suas mensagens salvas?")) {
-        localStorage.removeItem(STORAGE_KEY_MSGS);
-        carregarMensagens();
-        document.getElementById('caixaCustomizada').style.display = 'none';
+        document.getElementById('nome').value = "";
+        document.getElementById('numero').value = "";
     }
 }
 
-// --- AÇÃO PRINCIPAL: BOTÃO ÚNICO ---
+function salvarDadosCliente() {
+    const codigo = document.getElementById('codigo').value.toUpperCase().trim();
+    const nome = document.getElementById('nome').value.trim();
+    const tel = document.getElementById('numero').value.replace(/\D/g, '');
+
+    if (codigo && nome && tel.length >= 8) {
+        const clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLIENTES)) || {};
+        clientes[codigo] = { nome, tel };
+        localStorage.setItem(STORAGE_KEY_CLIENTES, JSON.stringify(clientes));
+    }
+}
+
+function formatarTextoFinal(template) {
+    const nome = document.getElementById("nome").value.trim() || "Cliente";
+    const empresa = document.getElementById("empresa").value;
+    const codigo = document.getElementById("codigo").value.trim().toUpperCase() || "(sem cód)";
+    const entregador = document.getElementById("entregador").value.trim() || "o entregador(a)";
+
+    return template
+        .replace(/{nome}/g, nome)
+        .replace(/{empresa}/g, empresa)
+        .replace(/{codigo}/g, codigo)
+        .replace(/{entregador}/g, entregador);
+}
+
+// --- AÇÃO PRINCIPAL ---
 function enviarWhatsApp() {
-    let ddd = document.getElementById("ddd").value.replace(/\D/g, "");
-    let numero = document.getElementById("numero").value.replace(/\D/g, "");
-    let selectValue = document.getElementById("mensagem").value;
-    let mensagemFinal = "";
-
-    // 1. Validação Simples
-    if (ddd.length !== 2) {
-        alert("Por favor, digite um DDD válido com 2 números.");
-        document.getElementById("ddd").focus();
+    const ddd = document.getElementById("ddd").value.replace(/\D/g, "");
+    const numero = document.getElementById("numero").value.replace(/\D/g, "");
+    const nome = document.getElementById("nome").value.trim();
+    const codigo = document.getElementById("codigo").value.trim();
+    const entregador = document.getElementById("entregador").value.trim();
+    
+    // Validação
+    if (!entregador) {
+        alert("Por favor, preencha o seu nome de entregador.");
         return;
     }
-    if (numero.length < 8) {
-        alert("Por favor, digite um número de telefone válido.");
-        document.getElementById("numero").focus();
+    if (!codigo || !nome || ddd.length !== 2 || numero.length < 8) {
+        alert("Preencha todos os dados do destinatário: Código, Nome, DDD e Telefone válidos.");
         return;
     }
 
-    // 2. Salva o DDD para a próxima entrega (persiste no navegador)
-    localStorage.setItem(STORAGE_KEY_DDD, ddd);
+    salvarDadosCliente();
 
-    // 3. Define a Mensagem e verifica o LocalStorage
-    if (selectValue === "NOVA") {
-        mensagemFinal = document.getElementById("textoNovaMensagem").value.trim();
-        
-        if(mensagemFinal === "") {
-            alert("Por favor, digite a sua mensagem personalizada.");
-            document.getElementById("textoNovaMensagem").focus();
-            return;
-        }
-
-        // Verifica se o usuário quer salvar essa mensagem nas opções
-        let querSalvar = document.getElementById("salvarMensagemCheck").checked;
-        if (querSalvar) {
-            let msgsSalvas = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS)) ||[];
-            
-            // Salva apenas se a mensagem ainda não existir na lista
-            if (!msgsSalvas.includes(mensagemFinal)) {
-                msgsSalvas.push(mensagemFinal);
-                localStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(msgsSalvas));
-                
-                // Recarrega o Select para a nova mensagem já aparecer na lista
-                carregarMensagens();
-            }
-        }
-    } else {
-        // Se escolheu uma das mensagens da lista
-        mensagemFinal = selectValue;
-    }
-
-    // 4. Monta o Link
-    let telefone = "55" + ddd + numero;
-    let link = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagemFinal)}`;
-
-    // 5. ABRE O WHATSAPP IMEDIATAMENTE
+    const templateMensagem = document.getElementById("mensagem").value;
+    const textoFinal = formatarTextoFinal(templateMensagem);
+    const telefone = "55" + ddd + numero;
+    const link = `https://wa.me/${telefone}?text=${encodeURIComponent(textoFinal)}`;
+    
     window.open(link, '_blank');
 
-    // 6. Limpa os campos para o motorista fazer a próxima entrega rápido
-    document.getElementById("numero").value = "";
-    document.getElementById("textoNovaMensagem").value = "";
-    document.getElementById("mensagem").value = msgsPadrao[0]; // Volta pra 1ª opção
-    document.getElementById("caixaCustomizada").style.display = 'none';
+    // Limpeza para a próxima entrega
+    ["codigo", "nome", "numero"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById('mensagem').selectedIndex = 0;
+}
+
+function limparHistoricoClientes() {
+    if (confirm("Tem certeza que deseja apagar todo o histórico de destinatários? Esta ação não pode ser desfeita.")) {
+        localStorage.removeItem(STORAGE_KEY_CLIENTES);
+        // Limpa os campos na tela para refletir a exclusão
+        ["codigo", "nome", "numero"].forEach(id => document.getElementById(id).value = "");
+        alert("Histórico de clientes apagado com sucesso!");
+    }
 }
