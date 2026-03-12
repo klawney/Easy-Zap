@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gerador de Link WhatsApp</title>
+  </head>
+
+  <body>
+    <h2>Gerar Link do WhatsApp</h2>
+
+    <label>País:</label>
+    <input type="text" value="+55" id="pais" disabled />
+    <br /><br />
+
+    <label>DDD:</label>
+    <input type="text" id="ddd" value="31" maxlength="2" />
+    <br /><br />
+
+    <label>Número:</label>
+    <input type="text" id="numero" placeholder="XXXX XXXX" maxlength="9" />
+    <br /><br />
+
+    <label>Mensagem:</label>
+    <select id="mensagem">
+      <option value="Olá, o seu pedido já está a caminho!">
+        Olá, o seu pedido já está a caminho!
+      </option>
+
+      <option
+        value="Olá, o seu pedido chegou ao destino e está te aguardando vir buscar!"
+      >
+        Olá, o seu pedido chegou ao destino e está te aguardando vir buscar!
+      </option>
+    </select>
+
+    <br /><br />
+
+    <button onclick="gerarLink()">Gerar Link</button>
+
+    <br /><br />
+
+    <a id="linkWhats" target="_blank"></a>
+
+    <script>
+      function gerarLink() {
+        let pais = "55";
+        let ddd = document.getElementById("ddd").value;
+        let numero = document.getElementById("numero").value.replace(/\D/g, "");
+        let mensagem = document.getElementById("mensagem").value;
+
+        let telefone = pais + ddd + numero;
+        let mensagemCodificada = encodeURIComponent(mensagem);
+
+        let link = `https://wa.me/${telefone}?text=${mensagemCodificada}`;
+
+        let elementoLink = document.getElementById("linkWhats");
+        elementoLink.href = link;
+        elementoLink.innerText = "Abrir conversa no WhatsApp";
+      }
+    </script>
+  </body>
+</html>
